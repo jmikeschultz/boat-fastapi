@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Status</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        async function updateServices() {
+            const response = await fetch("/api/services");
+            const statuses = await response.json();
+            const tbody = document.querySelector("tbody");
+
+            tbody.querySelectorAll("tr").forEach(row => {
+                const service = row.getAttribute("data-service");
+                if (statuses[service]) {
+                    row.querySelector(".active-state").innerText = statuses[service].ActiveState;
+                    row.querySelector(".sub-state").innerText = statuses[service].SubState;
+                    row.querySelector(".main-pid").innerText = statuses[service].MainPID;
+                }
+            });
+        }
+
+        function toggleLogs(service) {
+            const logBox = document.getElementById(`logs-${service}`);
+            const button = document.getElementById(`button-${service}`);
+
+            if (logBox.classList.contains("open")) {
+                logBox.classList.remove("open");
+                button.classList.remove("open");
+            } else {
+                logBox.classList.add("open");
+                button.classList.add("open");
+            }
+        }
+
+    <!--setInterval(updateServices, 5000);  uses resources... -->
+    </script>
+</head>
+<body>
+    <h2>Service Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Active State</th>
+                <th>Sub State</th>
+                <th>Main PID</th>
+                <th>Logs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service, details in statuses.items() %}
+            <tr data-service="{{ service }}">
+                <td>{{ service }}</td>
+                <td class="active-state">{{ details.ActiveState }}</td>
+                <td class="sub-state">{{ details.SubState }}</td>
+                <td class="main-pid">{{ details.MainPID }}</td>
+                <td>
+                    <button id="button-{{ service }}" class="log-button" onclick="toggleLogs('{{ service }}')">View Logs</button>
+                    <div class="log-container" id="logs-{{ service }}">
+                        <pre>{% for log in details.Logs %}{{ log }}\n{% endfor %}</pre>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Command Outputs</h2>
+    <div class="command-output">
+        {% for cmd in command_outputs %}
+            <div class="command-title">{{ cmd.command }}</div>
+            <pre class="command-box">{{ cmd.output }}</pre>
+        {% endfor %}
+    </div>
+</body>
+</html>
