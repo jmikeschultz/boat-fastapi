@@ -44,7 +44,8 @@ COMMANDS = [
     TEMP_CMD,
     'tailscale status',
     'ip route show',
-    'nmcli connection show'
+    'nmcli connection show',
+    '/home/mike/boat-tracker/upload_stats.py /home/mike/boat-tracker/boat_tracker.db'
 ]
 
 @app.get("/services", response_class=HTMLResponse)
