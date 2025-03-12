@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Signal Strength</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h2 {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #007bff;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+        }
+        #wifi-data {
+            font-size: 18px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            color: #444;
+            background: #ffffff;
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        /* Flashing dot */
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: gray; /* Default idle color */
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            transform: translateY(-50%);
+            opacity: 1;
+            transition: background-color 0.4s ease-in-out, opacity 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <h2>📡 wlan1 signal strength</h2>
+    <canvas id="wifi-meter" width="200" height="200"></canvas>
+    <div id="wifi-data">
+        <span id="wifi-text">Waiting for data...</span>
+        <div class="dot" id="status-dot"></div>
+    </div>
+
+    <script>
+        let socket = new WebSocket("ws://" + window.location.host + "/api/wifi");
+
+        socket.onmessage = function(event) {
+            let data = JSON.parse(event.data);
+            updateGauge(data.quality, data.signal_level);
+            flashStatusDot(); // Flash the dot when new data arrives
+        };
+
+        function updateGauge(quality, signalLevel) {
+            let canvas = document.getElementById("wifi-meter");
+            let ctx = canvas.getContext("2d");
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw arc background
+            ctx.beginPath();
+            ctx.arc(100, 100, 80, 0.75 * Math.PI, 0.25 * Math.PI, false);
+            ctx.lineWidth = 20;
+            ctx.strokeStyle = "#ddd";
+            ctx.stroke();
+
+            // Determine color based on signal quality
+            let color = quality > 70 ? "#28a745" : quality > 40 ? "#ffc107" : "#dc3545";
+
+            // Draw signal quality arc
+            let endAngle = (0.75 + (quality / 100) * 1.5) * Math.PI;
+            ctx.beginPath();
+            ctx.arc(100, 100, 80, 0.75 * Math.PI, endAngle, false);
+            ctx.lineWidth = 20;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+
+            // Draw signal strength text
+            ctx.fillStyle = "#222";
+            ctx.font = "18px Inter, sans-serif";
+            ctx.fillText(`Signal: ${signalLevel} dBm`, 50, 120);
+            ctx.fillText(`Quality: ${quality}%`, 50, 140);
+
+            // Update text display
+            document.getElementById("wifi-text").innerHTML = `Signal: ${signalLevel} dBm | Quality: ${quality}%`;
+        }
+
+        function flashStatusDot() {
+            let dot = document.getElementById("status-dot");
+            dot.style.backgroundColor = "green"; // Turn green on update
+            dot.style.opacity = "1";
+
+            // Reset the dot color after 1 second
+            setTimeout(() => {
+                dot.style.backgroundColor = "white"; // Back to gray when idle
+                dot.style.opacity = "1";
+            }, 750); // Slower reset
+        }
+    </script>
+</body>
+</html>
