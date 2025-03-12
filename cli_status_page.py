@@ -1,7 +1,7 @@
 #!/home/mike/boat-fastapi/venv/bin/python
 
 import sys
-from main import SERVICES, COMMANDS, run_commands, get_service_status
+from utils import SERVICES, COMMANDS, run_commands, get_service_status
 
 def print_service_statuses():
     """Fetch and print service statuses."""

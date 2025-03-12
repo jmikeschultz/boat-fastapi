@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.templating import Jinja2Templates
-from utils import run_commands, get_service_status
+from utils import SERVICES, COMMANDS, run_commands, get_service_status
 import subprocess
 import asyncio
 
@@ -19,37 +19,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Jinja2 Templates
 templates = Jinja2Templates(directory="templates")
-
-# List of services to check
-SERVICES = [
-    "canbus",
-    "canbus_listener",
-    "boat-tracker",
-    "dhcpcd",
-    "temperature_mqtt",
-    "zwave-js-ui",
-    "gpsd",
-    "mumble-server"
-]
-
-# List of shell commands to run
-
-TEMP_CMD = """
-awk '{print "CPU Temperature: " $1/1000 "°C"}' /sys/class/thermal/thermal_zone0/temp
-"""
-
-COMMANDS = [
-    'iwconfig wlan1',
-    'iwconfig wlan0',    
-    'candump -n 4 can0',
-    'lscpu | grep "MHz"',
-    TEMP_CMD,
-    'tailscale status',
-    'ip route show',
-    'nmcli connection show',
-    '/home/mike/boat-tracker/upload_stats.py /home/mike/boat-tracker/boat_tracker.db',
-    '/home/mike/boat-tracker/gps_snapshot.py'
-]
 
 @app.get("/services", response_class=HTMLResponse)
 async def services_page(request: Request):
