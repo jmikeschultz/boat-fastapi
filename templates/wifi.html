@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Signal Strength</title>
-    
+    <title>wlan1 signal strength</title>
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -21,44 +21,57 @@
             font-weight: 600;
             color: #007bff;
         }
-        canvas {
-            display: block;
+        #bar-container {
+            position: relative;
+            width: 80%;
+            max-width: 500px;
+            height: 40px;
+            background: #ddd;
+            border-radius: 10px;
             margin: 20px auto;
+            overflow: hidden;
+        }
+        #signal-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease-in-out;
+        }
+        .gradations {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            max-width: 500px;
+            margin: 5px auto;
+            font-size: 14px;
         }
         #wifi-data {
             font-size: 18px;
-            font-family: 'Inter', sans-serif;
             font-weight: 600;
-            color: #444;
             background: #ffffff;
             display: inline-block;
             padding: 8px 15px;
             border-radius: 8px;
             margin-top: 10px;
             border: 1px solid #ddd;
-            position: relative;
-        }
-        /* Flashing dot */
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: gray; /* Default idle color */
-            position: absolute;
-            top: 50%;
-            right: -20px;
-            transform: translateY(-50%);
-            opacity: 1;
-            transition: background-color 0.4s ease-in-out, opacity 0.4s ease-in-out;
         }
     </style>
 </head>
 <body>
     <h2>📡 wlan1 signal strength</h2>
-    <canvas id="wifi-meter" width="200" height="200"></canvas>
+
+    <div id="bar-container">
+        <div id="signal-bar"></div>
+    </div>
+
+    <div class="gradations">
+        <span>-90 dBm</span>
+        <span>-70 dBm</span>
+        <span>-50 dBm</span>
+        <span>-30 dBm</span>
+    </div>
+
     <div id="wifi-data">
         <span id="wifi-text">Waiting for data...</span>
-        <div class="dot" id="status-dot"></div>
     </div>
 
     <script>
@@ -66,55 +79,35 @@
 
         socket.onmessage = function(event) {
             let data = JSON.parse(event.data);
-            updateGauge(data.quality, data.signal_level);
-            flashStatusDot(); // Flash the dot when new data arrives
+            updateBar(data.signal_level, data.quality);
         };
 
-        function updateGauge(quality, signalLevel) {
-            let canvas = document.getElementById("wifi-meter");
-            let ctx = canvas.getContext("2d");
-
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw arc background
-            ctx.beginPath();
-            ctx.arc(100, 100, 80, 0.75 * Math.PI, 0.25 * Math.PI, false);
-            ctx.lineWidth = 20;
-            ctx.strokeStyle = "#ddd";
-            ctx.stroke();
-
-            // Determine color based on signal quality
-            let color = quality > 70 ? "#28a745" : quality > 40 ? "#ffc107" : "#dc3545";
-
-            // Draw signal quality arc
-            let endAngle = (0.75 + (quality / 100) * 1.5) * Math.PI;
-            ctx.beginPath();
-            ctx.arc(100, 100, 80, 0.75 * Math.PI, endAngle, false);
-            ctx.lineWidth = 20;
-            ctx.strokeStyle = color;
-            ctx.stroke();
-
-            // Draw signal strength text
-            ctx.fillStyle = "#222";
-            ctx.font = "18px Inter, sans-serif";
-            ctx.fillText(`Signal: ${signalLevel} dBm`, 50, 120);
-            ctx.fillText(`Quality: ${quality}%`, 50, 140);
-
-            // Update text display
-            document.getElementById("wifi-text").innerHTML = `Signal: ${signalLevel} dBm | Quality: ${quality}%`;
+        function dBmToPercentage(dBm) {
+            let minSignal = -90;
+            let maxSignal = -30;
+            return ((dBm - minSignal) / (maxSignal - minSignal)) * 100;
         }
 
-        function flashStatusDot() {
-            let dot = document.getElementById("status-dot");
-            dot.style.backgroundColor = "green"; // Turn green on update
-            dot.style.opacity = "1";
+        function getColorGradient(dBm) {
+            let minSignal = -90;
+            let maxSignal = -30;
+            let percentage = (dBm - minSignal) / (maxSignal - minSignal);
 
-            // Reset the dot color after 1 second
-            setTimeout(() => {
-                dot.style.backgroundColor = "white"; // Back to gray when idle
-                dot.style.opacity = "1";
-            }, 750); // Slower reset
+            // Smooth color transition: Red (-90) → Yellow (-70) → Green (-30)
+            let red = Math.max(0, 255 - percentage * 255);
+            let green = Math.min(255, percentage * 255);
+            return `rgb(${red},${green},0)`;
+        }
+
+        function updateBar(signalLevel, quality) {
+            let percentage = dBmToPercentage(signalLevel);
+            let bar = document.getElementById("signal-bar");
+
+            bar.style.width = `${percentage}%`;
+            bar.style.backgroundColor = getColorGradient(signalLevel);
+
+            // Update text
+            document.getElementById("wifi-text").innerHTML = `Signal: ${signalLevel} dBm | Quality: ${quality}%`;
         }
     </script>
 </body>

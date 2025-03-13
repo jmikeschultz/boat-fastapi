@@ -28,8 +28,8 @@ COMMANDS = [
     'tailscale status',
     'ip route show',
     'nmcli connection show',
-    '/home/mike/boat-tracker/upload_stats.py /home/mike/boat-tracker/boat_tracker.db',
-    '/home/mike/boat-tracker/gps_snapshot.py'
+    '/home/mike/boat-tracker/tools/upload_stats.py /home/mike/boat-tracker/boat_tracker.db',
+    '/home/mike/boat-tracker/tools/gps_snapshot.py'
 ]
 
 def run_command(command):
