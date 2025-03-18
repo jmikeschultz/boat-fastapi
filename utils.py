@@ -14,21 +14,24 @@ SERVICES = [
 ]
 
 # List of shell commands to run
-
-TEMP_CMD = """
+C1 = """
 awk '{print "CPU Temperature: " $1/1000 "°C"}' /sys/class/thermal/thermal_zone0/temp
+"""
+
+C2 = """
+awk '{print $1 / 1000 " MHz"}' /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
 """
 
 COMMANDS = [
     'uptime',
-    'lscpu | grep "MHz"',
-    TEMP_CMD,    
+    C1,
+    C2,
     'iwconfig wlan1',
     'iwconfig wlan0',
-    'nmcli connection show',    
+    'nmcli connection show',
     'tailscale status',
     'ip route show',
-    'candump -n 4 can0',    
+    'candump -n 4 can0',
     '/home/mike/boat-tracker/tools/upload_stats.py /home/mike/boat-tracker/boat_tracker.db',
     '/home/mike/boat-tracker/tools/gps_snapshot.py'
 ]
@@ -61,7 +64,6 @@ def run_commands(commands):
 def get_service_status(service):
     """Fetch detailed service status from systemctl, including logs."""
     try:
-        # Run systemctl show
         result = subprocess.run(
             ["systemctl", "show", service, "--no-page"],
             capture_output=True,
@@ -77,14 +79,12 @@ def get_service_status(service):
                 "Logs": [f"⚠️ Error retrieving service: {result.stderr.strip()}"]
             }
 
-        # Parse systemctl output
         status_data = {}
         for line in result.stdout.strip().split("\n"):
             if "=" in line:
                 key, value = line.split("=", 1)
                 status_data[key] = value
 
-        # Get last 10 log lines from `systemctl status`
         log_result = subprocess.run(
             ["systemctl", "status", service, "--no-pager"],
             capture_output=True,
@@ -115,5 +115,19 @@ def get_services_status(services):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_service = {executor.submit(get_service_status, svc): svc for svc in services}
         for future in concurrent.futures.as_completed(future_to_service):
-            results.append(future.result())  # Collect results as they complete
+            results.append(future.result())
     return results
+
+def get_system_status(services, commands):
+    """Retrieve both service statuses and command outputs concurrently."""
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        service_future = executor.submit(get_services_status, services)
+        command_future = executor.submit(run_commands, commands)
+
+        services_status = service_future.result()
+        commands_output = command_future.result()
+
+    return {
+        "services_status": services_status,
+        "commands_output": commands_output
+    }

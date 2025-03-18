@@ -4,8 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.templating import Jinja2Templates
-from utils import SERVICES, COMMANDS, run_commands, get_service_status
-import subprocess
+from utils import SERVICES, COMMANDS, get_services_status, get_system_status
 import asyncio
 
 app = FastAPI()
@@ -23,17 +22,22 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/services", response_class=HTMLResponse)
 async def services_page(request: Request):
     """Render the services page with detailed statuses and command outputs."""
-    statuses = {service: get_service_status(service) for service in SERVICES}
-    command_outputs = run_commands(COMMANDS)
+    results = get_system_status(SERVICES, COMMANDS)
+
+    # Convert service list to dictionary {service_name: service_details}
+    statuses = {service["Service"]: service for service in results.get('services_status', [])}  
+
+    command_outputs = results.get('commands_output', [])
+
     return templates.TemplateResponse(
-        "services.html", 
+        "services.html",
         {"request": request, "statuses": statuses, "command_outputs": command_outputs}
     )
 
 @app.get("/api/services")
 async def get_services():
     """Return full service statuses as JSON, including logs."""
-    statuses = {service: get_service_status(service) for service in SERVICES}
+    statuses = get_services_status(SERVICES)  # ✅ Now using concurrent fetching
     return statuses
 
 @app.get("/", response_class=HTMLResponse)
@@ -63,7 +67,7 @@ async def wifi_page(request: Request):
     """Serve the Wi-Fi signal page"""
     return templates.TemplateResponse("wifi.html", {"request": request})
 
-@app.websocket("/api/wifi")  # ✅ Now WebSocket uses /api/wifi
+@app.websocket("/api/wifi")
 async def websocket_wifi(websocket: WebSocket):
     """WebSocket to send live Wi-Fi signal strength every second."""
     await websocket.accept()
