@@ -3,8 +3,6 @@ import concurrent.futures
 
 # List of services to check
 SERVICES = [
-    "canbus",
-    "canbus_listener",
     "boat-tracker",
     "dhcpcd",
     "temperature_mqtt",
@@ -31,7 +29,6 @@ COMMANDS = [
     'nmcli connection show',
     'tailscale status',
     'ip route show',
-    'candump -n 4 can0',
     '/home/mike/boat-tracker/tools/upload_stats.py /home/mike/boat-tracker/boat_tracker.db',
     '/home/mike/boat-tracker/tools/gps_snapshot.py'
 ]
